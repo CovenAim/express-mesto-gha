@@ -1,8 +1,8 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
 const rootRouter = require('./routes/index');
-const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = 3000;
