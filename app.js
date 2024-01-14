@@ -2,7 +2,9 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
+const { errors: celebrateErrors } = require('celebrate');
 const rootRouter = require('./routes/index');
+const errorHandler = require('./middlewares/errors');
 
 const app = express();
 const PORT = 3000;
@@ -45,6 +47,8 @@ app.use((req, res, next) => {
 
 // rootRouter
 app.use('/', rootRouter);
+app.use(celebrateErrors());
+app.use(errorHandler);
 
 // Обработка случая, когда маршрут не найден
 app.use((req, res) => {

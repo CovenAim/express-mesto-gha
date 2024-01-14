@@ -1,18 +1,20 @@
+const mongoose = require('mongoose');
 const http2 = require('http2');
 const Card = require('../models/card');
+const BadRequestError = require('../utils/BadRequestError');
+const NotFoundError = require('../utils/NotFoundError');
+const ForbiddenError = require('../utils/ForbiddenErrors');
 
-exports.getCards = async (req, res) => {
+exports.getCards = async (req, res, next) => {
   try {
     const cards = await Card.find({});
     res.status(http2.constants.HTTP_STATUS_OK).json({ data: cards });
   } catch (err) {
-    res
-      .status(http2.constants.HTTP_STATUS_INTERNAL_SERVER_ERROR)
-      .send({ message: 'На сервере произошла ошибка' });
+    next(err);
   }
 };
 
-exports.createCard = async (req, res) => {
+exports.createCard = async (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   try {
@@ -20,47 +22,45 @@ exports.createCard = async (req, res) => {
     res.status(http2.constants.HTTP_STATUS_CREATED).json(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res
-        .status(http2.constants.HTTP_STATUS_BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
-    } else {
-      res
-        .status(http2.constants.HTTP_STATUS_INTERNAL_SERVER_ERROR)
-        .send({ message: 'На сервере произошла ошибка' });
+      next(new BadRequestError(err.message));
     }
+    next(err);
   }
 };
 
-exports.deleteCard = async (req, res) => {
+// eslint-disable-next-line consistent-return
+exports.deleteCard = async (req, res, next) => {
   const { cardId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(cardId)) {
+    return next(new BadRequestError('Некорректный ID карточки'));
+  }
 
   try {
     const card = await Card.findById(cardId);
     if (!card) {
-      return res
-        .status(http2.constants.HTTP_STATUS_NOT_FOUND)
-        .send({ message: 'Карточка не найдена' });
+      return next(new NotFoundError('Карточка не найдена'));
+    }
+    if (card.owner.toString() !== req.user._id.toString()) {
+      return next(
+        new ForbiddenError('Недостаточно прав для удаления этой карточки'),
+      );
     }
 
     await Card.deleteOne({ _id: cardId });
-    return res
+    res
       .status(http2.constants.HTTP_STATUS_OK)
       .send({ message: 'Карточка удалена' });
   } catch (err) {
-    if (err.name === 'CastError') {
-      return res
-        .status(http2.constants.HTTP_STATUS_BAD_REQUEST)
-        .send({ message: 'Неверный формат ID карточки' });
-    }
-    console.error('Ошибка при удалении карточки:', err);
-    return res
-      .status(http2.constants.HTTP_STATUS_INTERNAL_SERVER_ERROR)
-      .send({ message: 'На сервере произошла ошибка' });
+    next(err);
   }
 };
 
-exports.likeCard = async (req, res) => {
+// eslint-disable-next-line consistent-return
+exports.likeCard = async (req, res, next) => {
   const { cardId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(cardId)) {
+    return next(new BadRequestError('Некорректный ID карточки'));
+  }
 
   try {
     const card = await Card.findByIdAndUpdate(
@@ -68,28 +68,22 @@ exports.likeCard = async (req, res) => {
       { $addToSet: { likes: req.user._id } },
       { new: true },
     );
-
     if (!card) {
-      return res
-        .status(http2.constants.HTTP_STATUS_NOT_FOUND)
-        .send({ message: 'Карточка не найдена' });
+      return next(new NotFoundError('Карточка не найдена'));
     }
 
-    return res.status(http2.constants.HTTP_STATUS_OK).json(card);
+    res.status(http2.constants.HTTP_STATUS_OK).json(card);
   } catch (err) {
-    if (err.name === 'CastError') {
-      return res
-        .status(http2.constants.HTTP_STATUS_BAD_REQUEST)
-        .send({ message: 'Неверный формат ID карточки' });
-    }
-    return res
-      .status(http2.constants.HTTP_STATUS_INTERNAL_SERVER_ERROR)
-      .send({ message: 'На сервере произошла ошибка' });
+    next(err);
   }
 };
 
-exports.dislikeCard = async (req, res) => {
+// eslint-disable-next-line consistent-return
+exports.dislikeCard = async (req, res, next) => {
   const { cardId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(cardId)) {
+    return next(new BadRequestError('Некорректный ID карточки'));
+  }
 
   try {
     const card = await Card.findByIdAndUpdate(
@@ -97,22 +91,12 @@ exports.dislikeCard = async (req, res) => {
       { $pull: { likes: req.user._id } },
       { new: true },
     );
-
     if (!card) {
-      return res
-        .status(http2.constants.HTTP_STATUS_NOT_FOUND)
-        .send({ message: 'Карточка не найдена' });
+      return next(new NotFoundError('Карточка не найдена'));
     }
 
-    return res.status(http2.constants.HTTP_STATUS_OK).json(card);
+    res.status(http2.constants.HTTP_STATUS_OK).json(card);
   } catch (err) {
-    if (err.name === 'CastError') {
-      return res
-        .status(http2.constants.HTTP_STATUS_BAD_REQUEST)
-        .send({ message: 'Неверный формат ID карточки' });
-    }
-    return res
-      .status(http2.constants.HTTP_STATUS_INTERNAL_SERVER_ERROR)
-      .send({ message: 'На сервере произошла ошибка' });
+    next(err);
   }
 };
