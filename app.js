@@ -37,21 +37,13 @@ app.use(express.json());
 // Добавляем лимитер
 app.use(limiter);
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '656f3a96e42bc2e806180894',
-  };
-
-  next();
-});
-
 // rootRouter
 app.use('/', rootRouter);
 app.use(celebrateErrors());
 app.use(errorHandler);
 
 // Обработка случая, когда маршрут не найден
-app.use((req, res) => {
+app.use('*', (req, res) => {
   res.status(HTTP_NOT_FOUND).json({ message: 'Страница не найдена' });
 });
 
