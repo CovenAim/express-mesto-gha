@@ -16,7 +16,7 @@ router.get('/:userId', celebrate(userIdSchema), userController.getUserById);
 router.patch(
   '/me',
   celebrate({ body: updateUserSchema }),
-  userController.updateProfile
+  userController.updateProfile,
 );
 router.patch(
   '/me/avatar',
