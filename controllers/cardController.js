@@ -14,42 +14,39 @@ exports.getCards = async (req, res, next) => {
   }
 };
 
+// eslint-disable-next-line consistent-return
 exports.createCard = async (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
+
   try {
     const card = await Card.create({ name, link, owner });
-    res.status(http2.constants.HTTP_STATUS_CREATED).json(card);
+    return res.status(http2.constants.HTTP_STATUS_CREATED).json(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      next(new BadRequestError(err.message));
+      return next(new BadRequestError(err.message));
     }
-    next(err);
+    return next(err);
   }
 };
 
 // eslint-disable-next-line consistent-return
 exports.deleteCard = async (req, res, next) => {
   const { cardId } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(cardId)) {
-    return next(new BadRequestError('Некорректный ID карточки'));
-  }
 
   try {
     const card = await Card.findById(cardId);
+
     if (!card) {
       return next(new NotFoundError('Карточка не найдена'));
     }
+
     if (card.owner.toString() !== req.user._id.toString()) {
-      return next(
-        new ForbiddenError('Недостаточно прав для удаления этой карточки'),
-      );
+      return next(new ForbiddenError('Недостаточно прав для удаления этой карточки'));
     }
 
-    await Card.deleteOne({ _id: cardId });
-    res
-      .status(http2.constants.HTTP_STATUS_OK)
-      .send({ message: 'Карточка удалена' });
+    await card.deleteOne();
+    res.sendStatus(http2.constants.HTTP_STATUS_OK);
   } catch (err) {
     next(err);
   }

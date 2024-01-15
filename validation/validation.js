@@ -15,18 +15,18 @@ const createUserSchema = Joi.object({
 
 const userIdSchema = {
   [Segments.PARAMS]: Joi.object().keys({
-    userId: Joi.string().alphanum().length(24).required()
+    userId: Joi.string().hex().length(24).required()
       .messages({
+        'string.hex': 'Некорректный ID пользователя',
         'string.length': 'Некорректный ID пользователя',
-        'string.alphanum': 'Некорректный ID пользователя',
         'any.required': 'ID пользователя обязателен',
       }),
   }),
 };
 
 const updateUserSchema = Joi.object({
-  name: Joi.string().min(2).max(30),
-  about: Joi.string().min(2).max(30),
+  name: Joi.string().min(2).max(30).required(),
+  about: Joi.string().min(2).max(30).required(),
 });
 
 const updateAvatarSchema = Joi.object({
@@ -48,10 +48,10 @@ const createCardSchema = Joi.object({
 
 const cardIdSchema = {
   [Segments.PARAMS]: Joi.object().keys({
-    cardId: Joi.string().alphanum().length(24).required()
+    cardId: Joi.string().hex().length(24).required()
       .messages({
+        'string.hex': 'Некорректный ID карточки',
         'string.length': 'Некорректный ID карточки',
-        'string.alphanum': 'Некорректный ID карточки',
         'any.required': 'ID карточки обязателен',
       }),
   }),

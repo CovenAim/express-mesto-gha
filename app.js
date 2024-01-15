@@ -5,9 +5,9 @@ const mongoose = require('mongoose');
 const { errors: celebrateErrors } = require('celebrate');
 const rootRouter = require('./routes/index');
 const errorHandler = require('./middlewares/errors');
+const config = require('./config');
 
 const app = express();
-const PORT = 3000;
 const HTTP_NOT_FOUND = 404;
 
 // Используем helmet
@@ -21,7 +21,7 @@ const limiter = rateLimit({
 
 // Подключение к MongoDB
 mongoose
-  .connect('mongodb://localhost:27017/mestodb', {
+  .connect(config.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -43,9 +43,20 @@ app.use(celebrateErrors());
 app.use(errorHandler);
 
 // Обработка случая, когда маршрут не найден
-app.use('*', (req, res) => {
-  res.status(HTTP_NOT_FOUND).json({ message: 'Страница не найдена' });
+app.use('*', (req, res, next) => {
+  const error = new Error('Страница не найдена');
+  error.statusCode = HTTP_NOT_FOUND;
+  next(error);
 });
+
+// Центральный обработчик ошибок
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({ message: err.message });
+  next();
+});
+
+const { PORT } = config;
 
 // Запуск сервера
 app.listen(PORT, () => {

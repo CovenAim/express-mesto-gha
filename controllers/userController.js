@@ -6,6 +6,7 @@ const User = require('../models/user');
 const BadRequestError = require('../utils/BadRequestError');
 const NotFoundError = require('../utils/NotFoundError');
 const UnauthorizedError = require('../utils/UnauthorizedError');
+const { CustomError } = require('../utils/CustomError');
 
 // Получение всех пользователей
 exports.getAllUsers = async (req, res, next) => {
@@ -61,13 +62,15 @@ exports.createUser = async (req, res, next) => {
   }
 };
 
+// Исправление с учетом нового модуля CustomError
 exports.updateProfile = async (req, res, next) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { $set: req.body },
       { new: true, runValidators: true },
-    ).orFail(new Error('Запрашиваемый пользователь не найден'));
+    ).orFail(new CustomError('Запрашиваемый пользователь не найден', 404));
+
     res.status(http2.constants.HTTP_STATUS_OK).json(updatedUser);
   } catch (err) {
     next(err);
@@ -102,18 +105,18 @@ exports.login = async (req, res, next) => {
       throw new UnauthorizedError('Неверные почта или пароль');
     }
 
-    const token = jwt.sign({ _id: user._id }, 'dev_secret', {
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
       expiresIn: '7d',
     });
 
     res.cookie('jwt', token, {
       maxAge: 3600000 * 24 * 7,
       httpOnly: true,
+      secure: true,
     });
 
     res.status(http2.constants.HTTP_STATUS_OK).send({
       data: { email: user.email, id: user._id },
-      token,
       message: 'Аутентификация прошла успешно',
     });
   } catch (err) {
@@ -121,16 +124,13 @@ exports.login = async (req, res, next) => {
   }
 };
 
-exports.getCurrentUser = async (req, res, next) => {
+exports.getCurrentProfile = async (req, res, next) => {
   try {
-    if (!req.user || !req.user._id) {
-      throw new Error('Пользователь не авторизован');
-    }
-
     const userId = req.user._id;
     const user = await User.findById(userId);
+
     if (!user) {
-      throw new NotFoundError('Пользователь не найден');
+      throw new CustomError('Пользователь не найден', 404);
     }
 
     res.status(http2.constants.HTTP_STATUS_OK).json({
