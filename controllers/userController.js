@@ -84,7 +84,8 @@ exports.updateAvatar = async (req, res, next) => {
       req.user._id,
       { avatar: req.body.avatar },
       { new: true, runValidators: true },
-    ).orFail(new Error('Запрашиваемый пользователь не найден'));
+    ).orFail(new CustomError('Запрашиваемый пользователь не найден'));
+
     res.status(http2.constants.HTTP_STATUS_OK).json(updatedUser);
   } catch (err) {
     next(err);
@@ -124,13 +125,25 @@ exports.login = async (req, res, next) => {
   }
 };
 
+// Теперь контроллер делегирует выполнение своих функций getUserById
 exports.getCurrentProfile = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    let userId;
+
+    if (req.params.userId === 'me' && req.user) {
+      userId = req.user._id;
+    } else {
+      userId = req.params.userId;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new BadRequestError('Некорректный ID пользователя');
+    }
+
     const user = await User.findById(userId);
 
     if (!user) {
-      throw new CustomError('Пользователь не найден', 404);
+      throw new NotFoundError('Пользователь не найден');
     }
 
     res.status(http2.constants.HTTP_STATUS_OK).json({
@@ -139,7 +152,7 @@ exports.getCurrentProfile = async (req, res, next) => {
       about: user.about,
       avatar: user.avatar,
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };

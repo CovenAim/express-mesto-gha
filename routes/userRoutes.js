@@ -11,7 +11,7 @@ const {
 const auth = require('../middlewares/auth');
 
 router.get('/', userController.getAllUsers);
-router.get('/me', auth, userController.getCurrentUser);
+router.get('/me', auth, userController.getUserById);
 router.get('/:userId', celebrate(userIdSchema), userController.getUserById);
 router.patch('/me', celebrate({ body: updateUserSchema }), userController.updateProfile);
 router.patch('/me/avatar', celebrate({ body: updateAvatarSchema }), userController.updateAvatar);

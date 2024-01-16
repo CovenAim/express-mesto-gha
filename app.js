@@ -8,6 +8,7 @@ const { errors: celebrateErrors } = require('celebrate');
 const rootRouter = require('./routes/index');
 const errorHandler = require('./middlewares/errors');
 const config = require('./config');
+const { CustomError } = require('./utils/CustomError');
 
 const app = express();
 const HTTP_NOT_FOUND = 404;
@@ -46,17 +47,16 @@ app.use(errorHandler);
 
 // Обработка случая, когда маршрут не найден
 app.use('*', (req, res, next) => {
-  const error = new Error('Страница не найдена');
-  error.statusCode = HTTP_NOT_FOUND;
-  next(error);
+  const notFoundError = new CustomError('Страница не найдена', HTTP_NOT_FOUND);
+  next(notFoundError);
 });
 
 // Центральный обработчик ошибок
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({ message: err.message });
-  next();
-});
+// app.use((err, req, res, next) => {
+//   const statusCode = err.statusCode || 500;
+//   res.status(statusCode).json({ message: err.message });
+//   next();
+// });
 
 const { PORT } = config;
 

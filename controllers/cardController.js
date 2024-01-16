@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 const http2 = require('http2');
 const Card = require('../models/card');
 const BadRequestError = require('../utils/BadRequestError');
@@ -55,9 +55,6 @@ exports.deleteCard = async (req, res, next) => {
 // eslint-disable-next-line consistent-return
 exports.likeCard = async (req, res, next) => {
   const { cardId } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(cardId)) {
-    return next(new BadRequestError('Некорректный ID карточки'));
-  }
 
   try {
     const card = await Card.findByIdAndUpdate(
@@ -65,12 +62,16 @@ exports.likeCard = async (req, res, next) => {
       { $addToSet: { likes: req.user._id } },
       { new: true },
     );
+
     if (!card) {
-      return next(new NotFoundError('Карточка не найдена'));
+      throw new NotFoundError('Карточка не найдена');
     }
 
     res.status(http2.constants.HTTP_STATUS_OK).json(card);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return next(new BadRequestError('Некорректный ID карточки'));
+    }
     next(err);
   }
 };
@@ -78,9 +79,6 @@ exports.likeCard = async (req, res, next) => {
 // eslint-disable-next-line consistent-return
 exports.dislikeCard = async (req, res, next) => {
   const { cardId } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(cardId)) {
-    return next(new BadRequestError('Некорректный ID карточки'));
-  }
 
   try {
     const card = await Card.findByIdAndUpdate(
@@ -88,12 +86,16 @@ exports.dislikeCard = async (req, res, next) => {
       { $pull: { likes: req.user._id } },
       { new: true },
     );
+
     if (!card) {
-      return next(new NotFoundError('Карточка не найдена'));
+      throw new NotFoundError('Карточка не найдена');
     }
 
     res.status(http2.constants.HTTP_STATUS_OK).json(card);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return next(new BadRequestError('Некорректный ID карточки'));
+    }
     next(err);
   }
 };
