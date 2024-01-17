@@ -30,10 +30,7 @@ exports.getUserById = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new BadRequestError('Некорректный ID пользователя');
     }
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new NotFoundError('Пользователь не найден');
-    }
+    const user = await User.findById(userId).orFail(new NotFoundError('Пользователь не найден'));
 
     res.status(http2.constants.HTTP_STATUS_OK).json(user);
   } catch (err) {
@@ -84,7 +81,7 @@ exports.updateAvatar = async (req, res, next) => {
       req.user._id,
       { avatar: req.body.avatar },
       { new: true, runValidators: true },
-    ).orFail(new CustomError('Запрашиваемый пользователь не найден'));
+    ).orFail(new CustomError('Запрашиваемый пользователь не найден', 404));
 
     res.status(http2.constants.HTTP_STATUS_OK).json(updatedUser);
   } catch (err) {
@@ -119,38 +116,6 @@ exports.login = async (req, res, next) => {
     res.status(http2.constants.HTTP_STATUS_OK).send({
       data: { email: user.email, id: user._id },
       message: 'Аутентификация прошла успешно',
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Теперь контроллер делегирует выполнение своих функций getUserById
-exports.getCurrentProfile = async (req, res, next) => {
-  try {
-    let userId;
-
-    if (req.params.userId === 'me' && req.user) {
-      userId = req.user._id;
-    } else {
-      userId = req.params.userId;
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      throw new BadRequestError('Некорректный ID пользователя');
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      throw new NotFoundError('Пользователь не найден');
-    }
-
-    res.status(http2.constants.HTTP_STATUS_OK).json({
-      name: user.name,
-      email: user.email,
-      about: user.about,
-      avatar: user.avatar,
     });
   } catch (err) {
     next(err);

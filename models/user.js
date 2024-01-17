@@ -25,8 +25,6 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    minlength: 2,
-    maxlength: 60,
     require: {
       value: true,
       message: 'Поле email является обязательным',

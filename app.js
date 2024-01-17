@@ -51,13 +51,6 @@ app.use('*', (req, res, next) => {
   next(notFoundError);
 });
 
-// Центральный обработчик ошибок
-// app.use((err, req, res, next) => {
-//   const statusCode = err.statusCode || 500;
-//   res.status(statusCode).json({ message: err.message });
-//   next();
-// });
-
 const { PORT } = config;
 
 // Запуск сервера
